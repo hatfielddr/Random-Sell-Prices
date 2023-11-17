@@ -1,2 +1,2 @@
-# Random-Sell-Prices
-Simple mod that randomizes selling prices for Lethal Company. Fully Configurable and Host Only
+# Random Sell Prices
+Simple mod for Lethal Company that randomizes selling prices each day. Fully Configurable and Host Only
