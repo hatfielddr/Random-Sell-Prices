@@ -15,6 +15,7 @@ namespace Random_Sell_Prices
 
         public static ConfigEntry<float> minPercentage;
         public static ConfigEntry<float> maxPercentage;
+        public static ConfigEntry<float> pityPercentage;
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -32,6 +33,7 @@ namespace Random_Sell_Prices
             // Creating the config file
             minPercentage = Config.Bind("General", "Minimum Selling Percentage", 0.1f, "Minimum random selling price (NOTE: This value is the decimal form of a percentage i.e. 0.1f = 10%.)");
             maxPercentage = Config.Bind("General", "Maximum Selling Percentage", 1.2f, "Maximum random selling price (NOTE: This value is the decimal form of a percentage i.e. 1.2f = 120%.)");
+            pityPercentage = Config.Bind("General", "Pity Selling Percentage", 0.8f, "At least one day per quota period is guaranteed to be at least this price (NOTE: This value is the decimal form of a percentage i.e. 0.8f = 80%.)");
 
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
 
