@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using UnityEngine;
+using LC_API.ServerAPI;
 
 namespace Random_Sell_Prices.Patches
 {
@@ -19,12 +20,12 @@ namespace Random_Sell_Prices.Patches
                 minPercentage = RandomSellPrices.pityPercentage.Value;
             }
 
-            if (StartOfRound.Instance.companyBuyingRate >= RandomSellPrices.pityPercentage.Value)
+            if (daysUntilDeadline <= 1 && StartOfRound.Instance.companyBuyingRate >= RandomSellPrices.pityPercentage.Value)
             {
                 hadPityDay = true;
             }
 
-            return UnityEngine.Random.Range(minPercentage, maxPercentage);
+            return Random.Range(minPercentage, maxPercentage);
         }
 
         // PATCHES
@@ -33,23 +34,58 @@ namespace Random_Sell_Prices.Patches
         [HarmonyPostfix]
         static void setBuyingRatePatch(ref TimeOfDay __instance)
         {
-            StartOfRound.Instance.companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
+            if (__instance.IsServer)
+            {
+                float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
+                StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
+                Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
+            }
+            else
+            {
+                StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+            }
         }
 
         [HarmonyPatch("ResetShip")]
         [HarmonyPostfix]
         static void resetShipPatch(ref float ___companyBuyingRate, ref TimeOfDay __instance)
         {
-            ___companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
             hadPityDay = false;
+            if (__instance.IsServer)
+            {
+                float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
+                StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
+                Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
+            }
+            else
+            {
+                StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+            }
+        }
+
+        [HarmonyPatch(typeof(TimeOfDay), nameof(TimeOfDay.SetNewProfitQuota))]
+        [HarmonyPostfix]
+        static void setNewProfitQuotaPatch(ref TimeOfDay __instance)
+        {
+            hadPityDay = false;
+            if (__instance.IsHost)
+            {
+                float companyBuyingRate = generatePrice((int)__instance.timeUntilDeadline);
+                StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
+                Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
+            }
+            else
+            {
+                StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+            }
         }
 
         [HarmonyPatch(typeof(TimeOfDay), nameof(TimeOfDay.SyncNewProfitQuotaClientRpc))]
         [HarmonyPostfix]
-        static void syncNewProfitQuotaClientPatch(ref StartOfRound __instance, ref float ___timeUntilDeadline)
+        static void syncNewProfitQuotaClientPatch()
         {
-            __instance.companyBuyingRate = generatePrice((int)___timeUntilDeadline);
             hadPityDay = false;
+            StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
         }
     }
 }
