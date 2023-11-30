@@ -79,6 +79,9 @@ namespace Random_Sell_Prices.Patches
 
         private static void altBuyingRateForDayPatch()
         {
+            // CALLED FROM SET TIME AND PLANET TO SAVED SETTINGS
+            // ADD LOAD FROM SAVE CODE HERE
+
             RandomSellPrices.mls.LogInfo("-----Your thought worked!-----");
             float companyBuyingRate = generatePrice(3);
             StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
