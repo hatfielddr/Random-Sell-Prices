@@ -50,8 +50,8 @@ namespace Random_Sell_Prices.Patches
 
             codeMatcher.Start();
             codeMatcher.MatchStartForward(SetFromSaveIlMatch);
-            codeMatcher.Advance(2);
-            codeMatcher.RemoveInstructionsWithOffsets(0, 2);
+            codeMatcher.Advance(1);
+            codeMatcher.RemoveInstructionsWithOffsets(0, 1);
             codeMatcher.Insert(new CodeInstruction(OpCodes.Call, typeof(TimeOfDayPatch).GetMethod(nameof(TimeOfDayPatch.altBuyingRateForDayPatch), BindingFlags.Static | BindingFlags.NonPublic)));
 
             return codeMatcher.Instructions();
