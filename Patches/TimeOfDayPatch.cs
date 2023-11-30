@@ -1,12 +1,23 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 using LC_API.ServerAPI;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using System.Reflection;
 
 namespace Random_Sell_Prices.Patches
 {
     [HarmonyPatch(typeof(StartOfRound))]
-    internal class TimeOfDayPatch
+    public class TimeOfDayPatch
     {
+        // CODE MATCH
+
+        private static readonly CodeMatch[] SetFromSaveIlMatch = new CodeMatch[] {
+            new CodeMatch(i => i.opcode == OpCodes.Stfld),
+            new CodeMatch(i => i.opcode == OpCodes.Call),
+            new CodeMatch(i => i.Calls(typeof(TimeOfDay).GetMethod("SetBuyingRateForDay", BindingFlags.Instance | BindingFlags.Public)))
+        };
+
         // MATH
 
         static bool hadPityDay = false;
@@ -24,40 +35,66 @@ namespace Random_Sell_Prices.Patches
             {
                 hadPityDay = true;
             }
-
-            return Random.Range(minPercentage, maxPercentage);
+            float price = Random.Range(minPercentage, maxPercentage);
+            RandomSellPrices.mls.LogInfo("Server price set to: " + price);
+            return price;
         }
 
         // PATCHES
 
+        [HarmonyTranspiler]
+        [HarmonyPatch("SetTimeAndPlanetToSavedSettings")]
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher codeMatcher = new CodeMatcher(instructions);
+
+            codeMatcher.Start();
+            codeMatcher.MatchStartForward(SetFromSaveIlMatch);
+            codeMatcher.Advance(2);
+            codeMatcher.RemoveInstructionsWithOffsets(0, 2);
+            codeMatcher.Insert(new CodeInstruction(OpCodes.Call, typeof(TimeOfDayPatch).GetMethod(nameof(TimeOfDayPatch.altBuyingRateForDayPatch), BindingFlags.Static | BindingFlags.NonPublic)));
+
+            return codeMatcher.Instructions();
+        }
+
         [HarmonyPatch(typeof(TimeOfDay), nameof(TimeOfDay.SetBuyingRateForDay))]
         [HarmonyPostfix]
-        static void setBuyingRatePatch(ref TimeOfDay __instance)
+        static void setBuyingRateForDayPatch()
         {
-            if (__instance.IsServer)
+            RandomSellPrices.mls.LogInfo("isServer: " + TimeOfDay.Instance.IsServer + "\nisHost: " + TimeOfDay.Instance.IsHost + "\nisClient: " + TimeOfDay.Instance.IsClient);
+
+            if (TimeOfDay.Instance.IsServer || TimeOfDay.Instance.IsHost)
             {
-                float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
+                float companyBuyingRate = generatePrice(TimeOfDay.Instance.daysUntilDeadline);
                 StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
-                Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
+                RandomSellPrices.mls.LogInfo("Broadcasting: " + companyBuyingRate);
+                Networking.Broadcast(companyBuyingRate.ToString(), "companyBuyingRate");
             }
-            else if (__instance.IsClient)
+            else if (!TimeOfDay.Instance.IsServer && TimeOfDay.Instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
             }
         }
 
+        private static void altBuyingRateForDayPatch()
+        {
+            RandomSellPrices.mls.LogInfo("-----Your thought worked!-----");
+            float companyBuyingRate = generatePrice(3);
+            StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
+        }
+
         [HarmonyPatch("ResetShip")]
         [HarmonyPostfix]
-        static void resetShipPatch(ref float ___companyBuyingRate, ref TimeOfDay __instance)
+        static void resetShipPatch(ref TimeOfDay __instance)
         {
             hadPityDay = false;
-            if (__instance.IsServer)
+            if (__instance.IsServer || __instance.IsHost)
             {
                 float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
                 StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
                 Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
             }
-            else if (__instance.IsClient)
+            else if (!__instance.IsServer && __instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
             }
@@ -68,7 +105,7 @@ namespace Random_Sell_Prices.Patches
         static bool setNewProfitQuotaPrefix(ref TimeOfDay __instance)
         {
             hadPityDay = false;
-            if (__instance.IsServer)
+            if (__instance.IsServer || __instance.IsHost)
             {
                 float companyBuyingRate = generatePrice((int)__instance.timeUntilDeadline);
                 StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
@@ -81,7 +118,7 @@ namespace Random_Sell_Prices.Patches
         [HarmonyPostfix]
         static void syncNewProfitQuotaClientPatch(ref TimeOfDay __instance)
         {
-            if (__instance.IsClient)
+            if (!__instance.IsServer && __instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
             }
@@ -91,13 +128,36 @@ namespace Random_Sell_Prices.Patches
         [HarmonyPrefix]
         static bool syncCompanyBuyingRateServerPrefix(ref TimeOfDay __instance)
         {
-            if (__instance.IsServer)
+            if (__instance.IsServer || __instance.IsHost)
             {
                 float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
                 StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
                 Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
             }
             return true;
+        }
+
+        [HarmonyPatch(nameof(StartOfRound.OnClientConnect))]
+        [HarmonyPrefix]
+        static bool onClientConnectPrefix(ref TimeOfDay __instance)
+        {
+            if (__instance.IsServer || __instance.IsHost)
+            {
+                float companyBuyingRate = generatePrice(__instance.daysUntilDeadline);
+                StartOfRound.Instance.companyBuyingRate = companyBuyingRate;
+                Networking.Broadcast(companyBuyingRate, "companyBuyingRate");
+            }
+            return true;
+        }
+
+        [HarmonyPatch("OnPlayerConnectedClientRpc")]
+        [HarmonyPostfix]
+        static void onPlayerConnectedClientRpc(ref TimeOfDay __instance)
+        {
+            if (!__instance.IsServer && __instance.IsClient)
+            {
+                StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+            }
         }
 
         // TODO: Check on saving/loading values with SaveGame and SetTimeAndPlanetToSavedSettings

@@ -23,7 +23,7 @@ namespace Random_Sell_Prices
 
         private static RandomSellPrices Instance;
 
-        internal ManualLogSource mls;
+        public static ManualLogSource mls;
 
         void Awake()
         {
@@ -51,13 +51,12 @@ namespace Random_Sell_Prices
             // NETWORKING
             mls.LogInfo("Setting up networking...");
 
-            Networking.GetFloat += (data, signature) =>
+            Networking.GetString += (string data, string signature) =>
             {
-                switch (signature)
+                if (signature == "companyBuyingRate")
                 {
-                    case "companyBuyingRate":
-                        receivedRate = data;
-                        break;
+                    receivedRate = float.Parse(data);
+                    mls.LogInfo("Received Price @" + receivedRate + "!");
                 }
 
             };
