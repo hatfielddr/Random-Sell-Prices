@@ -73,6 +73,7 @@ namespace Random_Sell_Prices.Patches
             else if (!TimeOfDay.Instance.IsServer && TimeOfDay.Instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+                RandomSellPrices.mls.LogInfo("Received: " + RandomSellPrices.receivedRate);
             }
         }
 
@@ -97,6 +98,7 @@ namespace Random_Sell_Prices.Patches
             else if (!__instance.IsServer && __instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+                RandomSellPrices.mls.LogInfo("Received: " + RandomSellPrices.receivedRate);
             }
         }
 
@@ -121,6 +123,7 @@ namespace Random_Sell_Prices.Patches
             if (!__instance.IsServer && __instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+                RandomSellPrices.mls.LogInfo("Received: " + RandomSellPrices.receivedRate);
             }
         }
 
@@ -157,6 +160,7 @@ namespace Random_Sell_Prices.Patches
             if (!__instance.IsServer && __instance.IsClient)
             {
                 StartOfRound.Instance.companyBuyingRate = RandomSellPrices.receivedRate;
+                RandomSellPrices.mls.LogInfo("Received: " + RandomSellPrices.receivedRate);
             }
         }
 
