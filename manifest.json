@@ -1,0 +1,10 @@
+{
+    "name": "RandomSellPrices",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/hatfielddr/Random-Sell-Prices",
+    "description": "Simple mod for Lethal Company that randomizes selling prices each day",
+    "dependencies": [
+        "LethalAPI-2.1.2",
+        "BepInEx-BepInExPack-5.4.2100"
+    ]
+}
