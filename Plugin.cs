@@ -17,7 +17,7 @@ namespace Random_Sell_Prices
         public static ConfigEntry<float> minPercentage;
         public static ConfigEntry<float> maxPercentage;
         public static ConfigEntry<float> pityPercentage;
-        public static float receivedRate;
+        public static ConfigEntry<bool> pityEnabled;
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -35,6 +35,7 @@ namespace Random_Sell_Prices
             // CREATING/BINDING THE CONFIG FILE
             minPercentage = Config.Bind("General", "Minimum Selling Percentage", 0.1f, "Minimum random selling price (NOTE: This value is the decimal form of a percentage i.e. 0.1f = 10%.)");
             maxPercentage = Config.Bind("General", "Maximum Selling Percentage", 1.2f, "Maximum random selling price (NOTE: This value is the decimal form of a percentage i.e. 1.2f = 120%.)");
+            pityEnabled = Config.Bind("General", "Pity Day Enabled", true, "Whether or not to allow for one pity day, where the sell percentage is at leasr the amount shown below.");
             pityPercentage = Config.Bind("General", "Pity Selling Percentage", 0.8f, "At least one day per quota period is guaranteed to be at least this price (NOTE: This value is the decimal form of a percentage i.e. 0.8f = 80%.)");
 
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
@@ -47,21 +48,6 @@ namespace Random_Sell_Prices
             harmony.PatchAll(typeof(TimeOfDayPatch));
 
             mls.LogInfo("Patching complete!");
-
-            // NETWORKING
-            mls.LogInfo("Setting up networking...");
-
-            Networking.GetString += (string data, string signature) =>
-            {
-                if (signature == "companyBuyingRate")
-                {
-                    receivedRate = float.Parse(data);
-                    mls.LogInfo("Received Price @" + receivedRate + "!");
-                }
-
-            };
-
-            mls.LogInfo("Networking complete!");
         }
     }
 }
