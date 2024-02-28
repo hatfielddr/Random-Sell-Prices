@@ -2,7 +2,6 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using LC_API.ServerAPI;
 using Random_Sell_Prices.Patches;
 
 namespace Random_Sell_Prices
@@ -12,7 +11,7 @@ namespace Random_Sell_Prices
     {
         private const string modGUID = "BigDaddy.RandomSellPrices";
         private const string modName = "Random Sell Prices";
-        private const string modVersion = "1.0.0.0";
+        private const string modVersion = "1.0.1";
 
         public static ConfigEntry<float> minPercentage;
         public static ConfigEntry<float> maxPercentage;
