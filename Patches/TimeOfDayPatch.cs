@@ -35,5 +35,19 @@ namespace Random_Sell_Prices.Patches
             RandomSellPrices.mls.LogInfo("Set daily price to: " + price);
             StartOfRound.Instance.companyBuyingRate = price;
         }
+
+        [HarmonyPatch(typeof(TimeOfDay), nameof(TimeOfDay.SetNewProfitQuota))]
+        [HarmonyPostfix]
+        static void setNewProfitQuotaPatch()
+        {
+            hadPityDay = false;
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ResetShip))]
+        [HarmonyPostfix]
+        static void resetShipPatch()
+        {
+            hadPityDay = false;
+        }
     }
 }
